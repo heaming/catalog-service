@@ -2,6 +2,8 @@ package com.kafka.catalogservice.service;
 
 import com.kafka.catalogservice.cassandra.entity.Product;
 import com.kafka.catalogservice.cassandra.repository.ProductRepository;
+import com.kafka.catalogservice.dto.ProductTagDto;
+import com.kafka.catalogservice.feign.SearchClient;
 import com.kafka.catalogservice.mysql.entity.SellerProduct;
 import com.kafka.catalogservice.mysql.repository.SellerProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,9 @@ public class CatalogService {
 
     @Autowired
     ProductRepository productRepository;
+
+    @Autowired
+    SearchClient searchClient;
 
     public Product regeisterProduct(Long sellerId,
                                     String name,
@@ -39,12 +44,28 @@ public class CatalogService {
                 tags
         );
 
+        var productTag = new ProductTagDto();
+        productTag.tags = tags;
+        productTag.productId = product.id;
+
+        searchClient.addTagCache(productTag);
+
         return productRepository.save(product);
     }
 
     public void deleteProduct(Long productId) {
+        var product = productRepository.findById(productId);
+
+        if(product.isPresent()) {
+            var productTag = new ProductTagDto();
+            productTag.tags = product.get().tags;
+            productTag.productId = product.get().id;
+        }
+
         productRepository.deleteById(productId);
         sellerProductRepository.deleteById(productId);
+
+
     }
 
     public List<Product> getProductsBySellerId(Long sellerId) {
@@ -69,4 +90,6 @@ public class CatalogService {
 
         return productRepository.save(product);
     }
+
+
 }
