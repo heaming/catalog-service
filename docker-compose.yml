@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  mysql-server:
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=user
+      - TZ=Asia/Seoul
+    ports:
+      - "3306:3306"
+
+  myredis:
+    image: redis:6.2
+    ports:
+      - "6379:6379"
+
+  cassandra-node-0:
+    image: cassandra
+    environment:
+      - CASSANDRA_SEEDS=cassandra-node-0
+      - CASSANDRA_CLUSTER_NAME=MyCluster
+      - CASSANDRA_ENDPOINT_SWITCH=GossipingPropertyFileSnitch
+      - CASSANDRA_DC=datacenter1
+    ports:
+      - "7000:7000" # 노드간 클러스터 내부 통신
+      - "7001:7001" # 노드간 보안 통신
+      - "9042:9042" # CQL 클라이언트와 통신
+    healthcheck:
+      test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
