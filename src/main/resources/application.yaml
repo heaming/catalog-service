@@ -4,17 +4,17 @@ spring:
   cassandra:
     keyspace-name: catalog
     port: 9042
-    contact-points: 127.0.0.1
+    contact-points: cassandra-node-0
     local-datacenter: datacenter1
     schema-action: create_if_not_exists
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/my_db?useSSL=false&useTimezone=true&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&autoReconnect=true
+    url: jdbc:mysql://mysql-server:3306/my_db?useSSL=false&useTimezone=true&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&autoReconnect=true
     username: root
     password: user
   data:
     redis:
-      host: localhost
+      host: myredis
       port: 6379
   output:
     ansi:
@@ -23,6 +23,3 @@ spring:
     generate-ddl: true
     hibernate:
       ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
