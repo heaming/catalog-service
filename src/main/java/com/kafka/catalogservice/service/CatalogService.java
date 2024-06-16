@@ -1,12 +1,12 @@
 package com.kafka.catalogservice.service;
 
+import blackfriday.protobuf.EdaMessage;
 import com.kafka.catalogservice.cassandra.entity.Product;
 import com.kafka.catalogservice.cassandra.repository.ProductRepository;
-import com.kafka.catalogservice.dto.ProductTagDto;
-import com.kafka.catalogservice.feign.SearchClient;
 import com.kafka.catalogservice.mysql.entity.SellerProduct;
 import com.kafka.catalogservice.mysql.repository.SellerProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ public class CatalogService {
     ProductRepository productRepository;
 
     @Autowired
-    SearchClient searchClient;
+    private KafkaTemplate<String, byte[]> kafkaTemplate;
 
     public Product regeisterProduct(Long sellerId,
                                     String name,
@@ -44,11 +44,12 @@ public class CatalogService {
                 tags
         );
 
-        var productTag = new ProductTagDto();
-        productTag.tags = tags;
-        productTag.productId = product.id;
+        var message = EdaMessage.ProductTag.newBuilder()
+                .setProductId(product.id)
+                .addAllTags(tags)
+                .build();
 
-        searchClient.addTagCache(productTag);
+        kafkaTemplate.send("product_tag_added", message.toByteArray());
 
         return productRepository.save(product);
     }
@@ -57,14 +58,16 @@ public class CatalogService {
         var product = productRepository.findById(productId);
 
         if(product.isPresent()) {
-            var productTag = new ProductTagDto();
-            productTag.tags = product.get().tags;
-            productTag.productId = product.get().id;
+            var message = EdaMessage.ProductTag.newBuilder()
+                    .setProductId(product.get().id)
+                    .addAllTags(product.get().tags)
+                    .build();
+
+            kafkaTemplate.send("product_tags_removed", message.toByteArray());
         }
 
         productRepository.deleteById(productId);
         sellerProductRepository.deleteById(productId);
-
 
     }
 
